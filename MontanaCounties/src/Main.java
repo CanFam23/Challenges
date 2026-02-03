@@ -6,9 +6,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        final String filePath = "data/MontanaCounties.csv"; // Path to your CSV file
-
+    public static Map<Integer, Map<String, String>> loadCountyData(String filePath){
         final Map<Integer, Map<String, String>> countyMap = new HashMap<>();
 
         // Load county data in
@@ -34,6 +32,14 @@ public class Main {
             System.err.println("Error reading file: " + e.getMessage());
             System.exit(1);
         }
+        return countyMap;
+    }
+
+
+    public static void main(String[] args) {
+        final String filePath = "data/MontanaCounties.csv"; // Path to your CSV file
+
+        final Map<Integer, Map<String, String>> countyMap = Main.loadCountyData(filePath);
 
         // User input
         try (Scanner scanner = new Scanner(System.in)) {
