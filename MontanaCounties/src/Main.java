@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Main {
     public static Map<Integer, Map<String, String>> loadCountyData(String filePath){
@@ -41,8 +42,25 @@ public class Main {
 
         final Map<Integer, Map<String, String>> countyMap = Main.loadCountyData(filePath);
 
-        // User input
+        String viewMode = null;
+
+        // Ask user for view mode
         try (Scanner scanner = new Scanner(System.in)) {
+            while(true) {
+                System.out.println("When viewing county data,");
+                System.out.print("do you want to view county name ('n'), seat ('s'), or both ('b')? ");
+
+                viewMode = scanner.nextLine().strip().toLowerCase();
+
+                final Set<String> viewModes = Set.of("n", "s", "b");
+
+                if (!viewModes.contains(viewMode)) {
+                    System.out.println("Invalid view mode: " + viewMode);
+                } else {
+                    break;
+                }
+            }
+
             while (true) {
                 System.out.print("Enter your county number ('q' to quit): ");
 
@@ -64,13 +82,9 @@ public class Main {
                     if (countyMap.containsKey(countyNum)) {
                         final Map<String, String> countyData = countyMap.get(countyNum);
 
-                        // Ask user for what data to display
+                        // Display data
                         viewMode:
                         while (true) {
-                            System.out.print("Do you want to view county name ('n'), seat ('s'), both ('b') or go back ('q')? ");
-
-                            final String viewMode = scanner.nextLine().strip().toLowerCase();
-
                             switch (viewMode) {
                                 case "n":
                                     System.out.println();
@@ -94,7 +108,8 @@ public class Main {
                                 case "q":
                                     break viewMode;
                                 default:
-                                    System.out.println("Invalid view mode, please enter 'n' for county name, 's' for seat, 'b' for both, or 'q' to go back.");
+                                    // This should never happen
+                                    System.out.println("Invalid view mode: " + viewMode);
                                     break;
                             }
                         }
