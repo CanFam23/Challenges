@@ -185,22 +185,20 @@ public class MontanaCounties {
           final Map<String, String> countyData = countyMap.get(cityName);
 
           // Display selected data
-          showDataLoop:
-          while (true) {
             switch (viewMode) {
               case "l":
                 System.out.println("\nInformation for " +
                     capitalizeString(cityName) + ": ");
                 System.out.println("License Plate Prefix: " +
                     countyData.get("LP") + "\n");
-                break showDataLoop;
+                break;
 
               case "c":
                 System.out.println("\nInformation for " +
                     capitalizeString(cityName) + ": ");
                 System.out.println("County: " +
                     countyData.get("County") + "\n");
-                break showDataLoop;
+                break;
 
               case "b":
                 System.out.println("\nInformation for " +
@@ -209,11 +207,10 @@ public class MontanaCounties {
                     countyData.get("County"));
                 System.out.println("License Plate Prefix: " +
                     countyData.get("LP") + "\n");
-                break showDataLoop;
+                break;
 
               default:
-                break showDataLoop;
-            }
+                break;
           }
         } else {
           // City not found in database
