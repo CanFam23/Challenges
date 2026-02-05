@@ -227,7 +227,7 @@ public class MontanaCounties {
             if (addToDB.equals("y")) {
               while (true) {
                 System.out.println();
-                System.out.println("Given country must be a valid Montana county, type 'l' to list all counties in Montana" );
+                System.out.println("Given county must be a valid Montana county, type 'l' to list all counties in Montana" );
                 System.out.print("Enter county for " +
                     capitalizeString(cityName) + ": ");
 

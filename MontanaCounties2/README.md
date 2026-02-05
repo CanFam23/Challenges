@@ -29,7 +29,7 @@ The first row is treated as a header and skipped.
 
 From the project root directory (`MontanaCounties2`):
 ```bash
-$ java src/Main.java
+$ java src/MontanaCounties.java
 ```
 
 This should compile and run the program.
@@ -63,7 +63,7 @@ Enter city name ('q' to quit): SuperAwesomeCity // User input
 The database don't have records for Superawesomecity
 Would you like to add it to the database? (y/n) y // User input
 
-Given country must be a valid Montana county, type 'l' to list all counties in Montana
+Given county must be a valid Montana county, type 'l' to list all counties in Montana
 Enter county for Superawesomecity: Lewis & clark // User input
 
 Successfully added superawesomecity to the database
