@@ -90,22 +90,18 @@ public class MontanaCounties {
    * @param outputFilePath path to the output CSV file
    * @param countyMap map containing county data to write
    */
-  public static void writeCountyData(String outputFilePath,
-                                     Map<String, Map<String, String>> countyMap) {
-    try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath))) {
+  public static void writeCountyData(String outputFilePath, String cityName,
+                                     Map<String, String> countyData) {
+    // Append data 
+    try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFilePath, true))) {
 
-      // Write CSV header
-      // Preserve csv format so easier to reuse with the first challenge (Or another file)
-      bw.write("County,County Seat,License Plate Prefix\n");
+      // Write new city data
+      bw.write(
+        capitalizeString(countyData.get("County")) + "," +
+            capitalizeString(cityName) + "," +
+            countyData.get("LP") + "\n"
+      );
 
-      // Write each county record
-      for (String key : countyMap.keySet()) {
-        bw.write(
-            capitalizeString(countyMap.get(key).get("County")) + "," +
-                capitalizeString(key) + "," +
-                countyMap.get(key).get("LP") + "\n"
-        );
-      }
     } catch (IOException e) {
       System.err.println("Error writing to file: " + e.getMessage());
       System.exit(1);
@@ -254,10 +250,8 @@ public class MontanaCounties {
                     }
                   }
 
-                  countyMap.put(cityName, countyData);
-
                   // Persist updated data
-                  writeCountyData(filePath, countyMap);
+                  writeCountyData(filePath, cityName, countyData);
                   countyMap = loadCountyData(filePath);
 
                   System.out.println("\nSuccessfully added " +
