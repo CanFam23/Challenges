@@ -8,3 +8,6 @@
 *.iws
 
 out/
+
+math-contest-data-splitter/*.csv
+math-contest-data-splitter/*Venv*
