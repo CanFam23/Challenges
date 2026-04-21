@@ -1,135 +1,103 @@
 ## Math Contest Data Splitter
 
-This is a Python script that reads a contest results CSV file and normalizes the data into two separate files:
+`split_data.py` reads a contest results CSV and normalizes it into:
 
-* **Institutions.csv** - unique institutions with generated IDs
-* **Teams.csv** - team data linked to institutions via Institution ID
+- `Institutions.csv`: unique institutions with generated institution IDs
+- `Teams.csv`: team rows linked back to institutions by `Institution ID`
 
-The script removes redundancy by separating institution data from team data and linking them with a deterministic ID.
+## Recent `split_data` Updates
 
-
+- Added fuzzy institution matching with `rapidfuzz` to group similar institution names.
+- Added `--stats` flag to print summary stats after splitting.
+- Institution IDs are now generated deterministically from normalized institution-name groups.
+- Output rows are sorted and de-duplicated before writing CSV files.
 
 ## Requirements
 
-* Python 3.9+
-* pip (Python package manager)
+- Python 3.9+
+- `pip`
 
-
-
-## Setup (Virtual Environment)
-
-From the project root directory:
+Install dependencies:
 
 ```bash
-python -m venv venv
-```
-Or `python3` if `python` doesn't work.
-
-Activate the virtual environment:
-
-**Mac/Linux:**
-
-```bash
-source venv/bin/activate
+pip install pandas rapidfuzz tabulate
 ```
 
-**Windows:**
-
-```bash
-venv\Scripts\activate
-```
-
-Install required packages:
-
-```bash
-pip install pandas
-```
+`tabulate` is needed for `--stats` table output (`DataFrame.to_markdown`).
 
 ## Input CSV Format
 
-The input file (e.g., `2015.csv`) should contain columns similar to:
+Expected columns:
 
-```
+```text
 Institution,City,State/Province,Country,TeamNumber,Advisor,Problem,Ranking
 ```
 
-* The script assumes these column names exist (after minor cleaning)
-* The first row is treated as a header
+Notes:
 
+- The first row is treated as the header.
+- Column names are lightly cleaned (`[^A-Za-z0-9/_-]` removed), but required fields still need to be present.
 
+## Usage
 
-## How to Run
-
-From the project root directory:
-
-```bash
-python script.py input.csv
-```
-
-Specify an output directory:
+Basic split:
 
 ```bash
-python script.py input.csv -o output/
+python split_data.py input.csv
 ```
 
+Write to an output directory:
 
-
-## Output
-
-Two files will be generated:
-
-### Institutions.csv
-
-```
-Institution ID,Institution Name,City,State/Province,Country
+```bash
+python split_data.py input.csv -o output/
 ```
 
-### Teams.csv
+Include summary stats:
 
+```bash
+python split_data.py input.csv -o output/ --stats
 ```
-Team Number,Advisor,Problem,Ranking,Institution ID
+
+## Output Files
+
+`Institutions.csv` columns:
+
+```text
+Institution ID,Institution,City,State/Province,Country
 ```
 
-* **Institution ID** is deterministically generated from:
+`Teams.csv` columns:
 
-  ```
-  Institution | City | State/Province | Country
-  ```
-* This ensures consistent linking across both files
-
-
+```text
+TeamNumber,Advisor,Problem,Ranking,Institution ID
+```
 
 ## How It Works
 
-* Cleans column names to remove special characters
-* Generates a unique ID for each institution using a deterministic UUID
-* Removes duplicate institutions
-* Splits team and institution data into separate tables
-* Writes both datasets to CSV
-
-
+- Reads the CSV into a pandas DataFrame.
+- Normalizes institution names (lowercase, punctuation stripped, whitespace collapsed).
+- Uses fuzzy matching (`token_sort_ratio`, threshold `>= 85`) to cluster similar institution names.
+- Assigns a deterministic short UUID-derived institution ID to each cluster.
+- Asserts all rows receive an institution ID.
+- Writes de-duplicated, sorted `Institutions.csv` and `Teams.csv`.
 
 ## Example
 
 ```bash
-python script.py 2015.csv -o output/
+python split_data.py 2015.csv -o output/ --stats
 ```
 
-Output:
+Expected output files:
 
-```
+```text
 output/
 ├── Institutions.csv
 └── Teams.csv
 ```
 
-
-
 ## Notes
 
-* IDs are consistent across runs for the same input data
-* Shortened IDs are used for readability
-* Collisions are extremely unlikely for this dataset size
-* This script doesn't clean the data at all. Consider that for a future improvement
-
+- IDs are deterministic across runs for the same normalized institution-name grouping.
+- IDs are short (first 10 chars of UUID5 hash with hyphens removed).
+- Fuzzy grouping helps reduce duplicates caused by naming variation, but thresholds may need tuning for different datasets.
 
