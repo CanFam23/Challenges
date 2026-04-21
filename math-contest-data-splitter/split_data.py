@@ -123,12 +123,56 @@ def split_file(file_path: str, output_dir: str) -> None:
     institution_path = os.path.join(output_dir, "Institutions.csv")
     team_path = os.path.join(output_dir, "Teams.csv")
 
+    get_stats(data)
+
     institution_data.to_csv(institution_path, index=False)
     team_data.to_csv(team_path, index=False)
     print(f"{file_path} successfully split!")
     print(f"Institution data saved to '{institution_path}'")
     print(f"Team data saved to '{team_path}'")
 
+def get_stats(df):
+    """
+    Args:
+        df (_type_): _description_
+    """
+    print("=" * 20)
+    print()
+    print("Data Stats:")
+    print()
+
+    print(f"Average number of teams per institution: {df.groupby('Institution ID').size().mean():.2f}")
+    print()
+
+    counts = df.groupby('Institution ID').size().reset_index(name="# of teams")
+
+    id_to_name = df.drop_duplicates('Institution ID') \
+                .set_index('Institution ID')['Institution']
+
+    counts['Institution'] = counts['Institution ID'].map(id_to_name)
+    counts = counts.sort_values(by="# of teams", ascending=False).reset_index()
+    counts.index += 1 # Start index at 1 just so it looks better
+
+    print("Top 10 Institutions with the most teams:")
+    print(counts[['Institution','# of teams']].head(10).to_markdown())
+    print()
+
+    outstanding_teams = df[df['Ranking'] == 'Outstanding Winner'].drop_duplicates('Institution ID').set_index('Institution ID')['Institution'].to_list()
+    print("Insitutions with at least team earning 'Outstanding Winner':")
+    for t in outstanding_teams:
+        print(f"- {t}")
+    print()
+
+    usa_meri_df = df[(df['Country'] == "USA") & (df['Ranking'].isin(['Meritorious', 'Finalist', 'Outstanding']))]
+    usa_meri_df = usa_meri_df.drop_duplicates('Institution ID').set_index('Institution ID')['Institution'].to_list()
+
+    print("All US teams earning 'Meritorious' or better:")
+    for t in usa_meri_df:
+            print(f"- {t}")
+    print()
+
+    print()
+    print("=" * 20)
 
 if __name__ == "__main__":
     # parser = argparse.ArgumentParser(description="Split contest data into normalized CSVs")
