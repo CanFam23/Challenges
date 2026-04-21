@@ -6,7 +6,7 @@ Reads a contest results CSV and normalizes it into two files:
 - Teams.csv (team data linked by Institution ID)
 
 Usage:
-    python script.py input.csv -o output_dir/
+    python split_data.py input.csv -o output_dir/ [--stats]
 """
 
 import os
@@ -18,27 +18,40 @@ import argparse
 from rapidfuzz import fuzz, process
 
 def make_id(s: str, length=10) -> str:
-    """Makes a UUID from the given string after stripping it and
-    converting to lowercase. The returned string is the given `length`.
+    """Create a deterministic short identifier for a string.
+
+    The string is normalized by trimming surrounding whitespace and
+    converting to lowercase before generating a UUID5 hash.
 
     Args:
-        s (str): String to make UUID from
+        s (str): Source string to hash.
         length (int, optional): How long the returned ID is. Defaults to 10.
 
     Returns:
-        str: Created UUID
+        str: UUID5-derived ID string with hyphens removed and truncated.
     """
     u = uuid.uuid5(uuid.NAMESPACE_DNS, s.strip().lower())
     return str(u).replace('-', '')[:length]
 
 def normalize(name):
+    """Normalize institution names for fuzzy matching.
+
+    This function lowercases text, strips punctuation, collapses repeated
+    whitespace, and trims leading/trailing spaces.
+
+    Args:
+        name: Institution name string to normalize.
+
+    Returns:
+        str: Normalized institution name.
+    """
     name = name.lower()
     name = re.sub(r"[^\w\s]", "", name)  # remove punctuation
     
     name = re.sub(r"\s+", " ", name).strip()
     return name
 
-def split_file(file_path: str, output_dir: str) -> None:
+def split_file(file_path: str, output_dir: str, stats: bool = False) -> None:
     """
     Reads a contest results CSV and splits it into two normalized CSV files:
     one containing unique institutions and one containing teams linked to
@@ -51,6 +64,11 @@ def split_file(file_path: str, output_dir: str) -> None:
         file_path (str): Path to the input CSV file containing contest results.
         output_dir (str): Directory where the output CSV files
                           (Institutions.csv and Teams.csv) will be saved.
+        stats (bool, optional): Whether to print summary statistics.
+                                Defaults to False.
+
+    Raises:
+        AssertionError: If any input row cannot be assigned an Institution ID.
     """
     if not os.path.exists(file_path):
         print(f"{file_path} not found!")
@@ -123,7 +141,8 @@ def split_file(file_path: str, output_dir: str) -> None:
     institution_path = os.path.join(output_dir, "Institutions.csv")
     team_path = os.path.join(output_dir, "Teams.csv")
 
-    get_stats(data)
+    if stats:
+        get_stats(data)
 
     institution_data.to_csv(institution_path, index=False)
     team_data.to_csv(team_path, index=False)
@@ -132,9 +151,16 @@ def split_file(file_path: str, output_dir: str) -> None:
     print(f"Team data saved to '{team_path}'")
 
 def get_stats(df):
-    """
+    """Print summary statistics for the normalized contest dataset.
+
+    Includes:
+    - average number of teams per institution,
+    - top institutions by number of teams,
+    - institutions with at least one "Outstanding Winner",
+    - U.S. institutions earning "Meritorious" or better.
+
     Args:
-        df (_type_): _description_
+        df: Contest results DataFrame with normalized institution IDs.
     """
     print("=" * 20)
     print()
@@ -175,20 +201,25 @@ def get_stats(df):
     print("=" * 20)
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description="Split contest data into normalized CSVs")
+    parser = argparse.ArgumentParser(description="Split contest data into normalized CSVs")
     
-    # parser.add_argument(
-    #     "input_file",
-    #     help="Path to input CSV file (e.g., 2015.csv)"
-    # )
+    parser.add_argument(
+        "input_file",
+        help="Path to input CSV file (e.g., 2015.csv)"
+    )
     
-    # parser.add_argument(
-    #     "-o", "--output_dir",
-    #     default=".",
-    #     help="Directory to save output CSV files (default: current directory)"
-    # )
+    parser.add_argument(
+        "-o", "--output_dir",
+        default=".",
+        help="Directory to save output CSV files (default: current directory)"
+    )
 
-    # args = parser.parse_args()
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Print summary statistics after splitting"
+    )
 
-    # split_file(args.input_file, args.output_dir)
-    split_file("2015.csv",".")
+    args = parser.parse_args()
+
+    split_file(args.input_file, args.output_dir, stats=args.stats)
