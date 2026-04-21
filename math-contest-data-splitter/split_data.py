@@ -15,6 +15,8 @@ import re
 import uuid
 import argparse
 
+from rapidfuzz import fuzz, process
+
 def make_id(s: str, length=10) -> str:
     """Makes a UUID from the given string after stripping it and
     converting to lowercase. The returned string is the given `length`.
@@ -28,6 +30,13 @@ def make_id(s: str, length=10) -> str:
     """
     u = uuid.uuid5(uuid.NAMESPACE_DNS, s.strip().lower())
     return str(u).replace('-', '')[:length]
+
+def normalize(name):
+    name = name.lower()
+    name = re.sub(r"[^\w\s]", "", name)  # remove punctuation
+    
+    name = re.sub(r"\s+", " ", name).strip()
+    return name
 
 def split_file(file_path: str, output_dir: str) -> None:
     """
@@ -54,24 +63,61 @@ def split_file(file_path: str, output_dir: str) -> None:
     # Clean column names
     data.columns = [re.sub(r'[^A-Za-z0-9/_-]', '', c) for c in data.columns]
 
-    # Create institution ID
-    data["Institution ID"] = data.apply(
-        lambda x: make_id(
-            f"{x['Institution']}|{x['City']}|{x['State/Province']}|{x['Country']}"
-        ),
-        axis=1
+    # Placeholder for ID
+    data["Institution ID"] = None
+
+    # Normalized institution name
+    data['norm_inst'] = data['Institution'].apply(normalize)
+
+    # Get all unique normalized institution names
+    institution_names = sorted(set(data["norm_inst"].dropna().tolist()))
+
+    results = {}
+
+    seen_names = set()
+
+    # Fuzzy match name with other institution names who have a similarity >= 85
+    for name in institution_names:
+        if name in seen_names:
+            continue
+        matches = process.extract(
+            query=name, # type: ignore
+            choices=institution_names, # type: ignore
+            scorer=fuzz.token_sort_ratio,
+            limit=5
+        ) # type: ignore
+        results[name] = [m[0] for m in matches if m[1] >= 85]
+
+        seen_names.add(name)
+
+        for n in results[name]:
+            seen_names.add(n)
+
+    # Make id for each name and assign it to all similar names too
+    for key in results.keys():
+        id = make_id(key)
+
+        data.loc[data["norm_inst"].isin(results[key]),"Institution ID"] = id
+
+    # Assert no missing IDs
+    missing = data[data["Institution ID"].isna()]
+    assert missing.empty, (
+        f'Missing IDs for: {", ".join(missing["norm_inst"].astype(str).tolist())}'
     )
 
+    # Save institution data after dropping duplicate ids and sorting by id
     institution_data = (
         data[["Institution ID","Institution","City","State/Province","Country"]]
-        .drop_duplicates()
+        .drop_duplicates(subset=["Institution ID"])
         .reset_index(drop=True)
+        .sort_values(by="Institution ID")
     )
     
     team_data = (
         data[["TeamNumber","Advisor","Problem","Ranking","Institution ID"]]
         .drop_duplicates()
         .reset_index(drop=True)
+        .sort_values(by=["TeamNumber","Institution ID"])
     )
 
     institution_path = os.path.join(output_dir, "Institutions.csv")
@@ -85,19 +131,20 @@ def split_file(file_path: str, output_dir: str) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Split contest data into normalized CSVs")
+    # parser = argparse.ArgumentParser(description="Split contest data into normalized CSVs")
     
-    parser.add_argument(
-        "input_file",
-        help="Path to input CSV file (e.g., 2015.csv)"
-    )
+    # parser.add_argument(
+    #     "input_file",
+    #     help="Path to input CSV file (e.g., 2015.csv)"
+    # )
     
-    parser.add_argument(
-        "-o", "--output_dir",
-        default=".",
-        help="Directory to save output CSV files (default: current directory)"
-    )
+    # parser.add_argument(
+    #     "-o", "--output_dir",
+    #     default=".",
+    #     help="Directory to save output CSV files (default: current directory)"
+    # )
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    split_file(args.input_file, args.output_dir)
+    # split_file(args.input_file, args.output_dir)
+    split_file("2015.csv",".")
